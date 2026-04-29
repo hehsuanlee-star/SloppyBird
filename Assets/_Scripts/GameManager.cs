@@ -16,11 +16,12 @@ public class GameManager : MonoBehaviour
 
     public float initialInterval = 2;
     public float minIntervval = 0.1f;
-    public float spawnInterval => Mathf.Lerp(initialInterval, minIntervval, Time.time*2/timeToMax);
+    public float gameTimer;
+    public float spawnInterval => Mathf.Lerp(initialInterval, minIntervval, Mathf.Clamp01(gameTimer * 2 / timeToMax));
     public float initialSpeed = 5;
     public float maxSpeed = 20;
     public float timeToMax = 120f; 
-    public float travelSpeed => Mathf.Lerp(initialSpeed, maxSpeed, Time.time / timeToMax);
+    public float travelSpeed => Mathf.Lerp(initialSpeed, maxSpeed, Mathf.Clamp01(gameTimer / timeToMax));
     private Queue<GameObject> InactiveObstacles;
 
     private void Awake()
@@ -56,12 +57,16 @@ public class GameManager : MonoBehaviour
         StartGame();
     }
 
+    private void Update()
+    {
+        gameTimer += Time.deltaTime;
+    }
     private async void StartGame()
     {
         isGameStart=true;
         controller.StartMotion();
         while (isGameStart)
-        { 
+        {
             ActivateObstacleOrSpawnNewOne();
             await Awaitable.WaitForSecondsAsync(spawnInterval);
         }
@@ -94,7 +99,10 @@ public class GameManager : MonoBehaviour
         InactiveObstacles.Enqueue(spawnedObstacle);
     }
 
-    
+    private void Reset()
+    {
+        gameTimer = 0;
+    }
     private void ObstacleSurpassed()
     {
         Score++;
@@ -114,6 +122,7 @@ public class GameManager : MonoBehaviour
             go.Stop();
         Debug.Log("GameOver");
         _UI.ShowGameOver();
+        Reset();
     }
 
     private void OnDestroy()
