@@ -1,0 +1,129 @@
+using System;
+using System.Collections.Generic;
+using Unity.VisualScripting;
+using UnityEngine;
+
+public class GameManager : MonoBehaviour
+{
+    [SerializeField] private GameObject player;
+    private BirdController controller;
+    [SerializeField] private UIManager _UI;
+    [SerializeField] private GameObject obstaclePrefab;
+    [SerializeField] private Transform startPos;
+    private bool isGameStart;
+    public int ObstaclePoolRange = 10;
+    public int Score;
+
+    public float initialInterval = 2;
+    public float minIntervval = 0.1f;
+    public float spawnInterval => Mathf.Lerp(initialInterval, minIntervval, Time.time*2/timeToMax);
+    public float initialSpeed = 5;
+    public float maxSpeed = 20;
+    public float timeToMax = 120f; 
+    public float travelSpeed => Mathf.Lerp(initialSpeed, maxSpeed, Time.time / timeToMax);
+    private Queue<GameObject> InactiveObstacles;
+
+    private void Awake()
+    {
+        InactiveObstacles = new Queue<GameObject>();
+        //Player
+        controller = player.GetComponent<BirdController>();
+        controller.OnTriggeredDead += GameOver;
+        //UI
+        _UI.GameStart += GameInit;
+    }
+
+    private void Start()
+    {
+        _UI.ShowGameTitle();
+    }
+
+    private void GameInit()
+    {
+        Score = 0;
+        controller.ReturnOrigin();
+        _UI.ScoreUpdate(Score);
+        foreach (var go in FindObjectsByType<Obstacle>(FindObjectsSortMode.None))
+            go.gameObject.SetActive(false);
+        //Clear Old Pool
+        InactiveObstacles.Clear();
+        //insintiate initial obstacle pool
+        for (int i = 0; i < ObstaclePoolRange; i++)
+        {
+            SpawnObstacleToPool();
+        }
+        //start
+        StartGame();
+    }
+
+    private async void StartGame()
+    {
+        isGameStart=true;
+        controller.StartMotion();
+        while (isGameStart)
+        { 
+            ActivateObstacleOrSpawnNewOne();
+            await Awaitable.WaitForSecondsAsync(spawnInterval);
+        }
+    }
+    private void ActivateObstacleOrSpawnNewOne()
+    {
+        if (InactiveObstacles.Count > 0)
+        {
+            var activeObstacle = InactiveObstacles.Dequeue();
+            var obstacle = activeObstacle.GetComponent<Obstacle>();
+            obstacle.SetRandomLocation();
+            obstacle.SetSpeed(travelSpeed);
+            activeObstacle.SetActive(true);
+        }
+        else
+        {
+            SpawnObstacleToPool();
+        }
+    }
+
+    private void SpawnObstacleToPool()
+    {
+        var spawnedObstacle = Instantiate(obstaclePrefab, startPos.position, Quaternion.identity);
+        var obstacle = spawnedObstacle.GetComponent<Obstacle>();
+        obstacle.OnSurpassed += ObstacleSurpassed;
+        obstacle.OnCollided += GameOver;
+        obstacle.OnRecycled += ObstacleRecycle;
+        obstacle.SetStartPos(startPos.position);
+        spawnedObstacle.SetActive(false);
+        InactiveObstacles.Enqueue(spawnedObstacle);
+    }
+
+    
+    private void ObstacleSurpassed()
+    {
+        Score++;
+        _UI.ScoreUpdate(Score);
+    }
+
+    private void ObstacleRecycle(GameObject obstacle)
+    { 
+        obstacle.SetActive(false);
+        InactiveObstacles.Enqueue(obstacle);
+    }
+    private void GameOver()
+    { 
+        isGameStart = false;
+        controller.PauseMotion();
+        foreach (var go in FindObjectsByType<Obstacle>(FindObjectsSortMode.None))
+            go.Stop();
+        Debug.Log("GameOver");
+        _UI.ShowGameOver();
+    }
+
+    private void OnDestroy()
+    {
+        foreach (var obstacle in FindObjectsByType<Obstacle>(FindObjectsSortMode.None))
+        { 
+            obstacle.OnSurpassed -= ObstacleSurpassed;
+            obstacle.OnCollided -= GameOver;
+            obstacle.OnRecycled -= ObstacleRecycle; 
+        }
+        controller.OnTriggeredDead -= GameOver;
+    }
+}
