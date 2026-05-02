@@ -10,7 +10,7 @@ public class BirdController : MonoBehaviour
     private void Awake()
     {
         _rb = GetComponent<Rigidbody2D>();
-        SetOirigin(transform.position);
+        SetOrigin(transform.position);
     }
 
     private void Start()
@@ -29,7 +29,7 @@ public class BirdController : MonoBehaviour
         _rb.bodyType = RigidbodyType2D.Static;
         isPaused = true;
     }
-    public void SetOirigin(Vector2 position)
+    public void SetOrigin(Vector2 position)
     {
         startPos = position;
     }
@@ -56,7 +56,7 @@ public class BirdController : MonoBehaviour
     public event Action OnTriggeredDead;
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        if (collision.gameObject.CompareTag("DeadZone"))
+        if (collision.gameObject.CompareTag("Hazard"))
         {
             OnTriggeredDead?.Invoke();
         }

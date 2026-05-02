@@ -5,29 +5,42 @@ public class Obstacle : MonoBehaviour
 {
     private Vector2 startPos;
     private float speed;
-    private float playerPositionX;
+    private float playerXPos;
     private void OnEnable()
     {
         bMove = true;
         hasSurpassed = false;
     }
-    public void SetRandomLocation()
+
+    public void ResetSpeedandLocation(float speed)
+    { 
+        SetSpeed(speed);
+        SetRandomLocation();
+    }
+
+    public void SetStartPosandPlayerXPos(Vector2 startPos, float playerX)
+    {
+        SetStartPos(startPos);
+        SetPlayerXPos(playerX);
+    }
+
+    private void SetRandomLocation()
     {
         int offsetY = UnityEngine.Random.Range(2, 6);
         if (UnityEngine.Random.value > 0.5f) offsetY = -offsetY;
         transform.position = new Vector2(startPos.x, offsetY);
         //Debug.Log($"Set Random Position at {transform.position}");
     }
-    public void SetPlayerPositionX(float x)
+    private void SetPlayerXPos(float x)
     { 
-        playerPositionX = x;
+        playerXPos = x;
     }
-    public void SetSpeed(float amount)
+    private void SetSpeed(float amount)
     { 
         speed = amount;
     }
 
-    public void SetStartPos(Vector2 pos)
+    private void SetStartPos(Vector2 pos)
     { 
         startPos = pos;
     }
@@ -58,21 +71,16 @@ public class Obstacle : MonoBehaviour
     private bool hasSurpassed;
     private void CheckSurpassed()
     {
-        if (!hasSurpassed && transform.position.x < playerPositionX)
+        if (!hasSurpassed && transform.position.x < playerXPos)
         { 
             OnSurpassed?.Invoke();
             hasSurpassed = true;
         }
     }
-    public event Action OnCollided;
+    
     public event Action<GameObject> OnRecycled;
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        if (collision.gameObject.CompareTag("Player"))
-        { 
-            OnCollided?.Invoke();
-        }
-
         if (collision.gameObject.CompareTag("RecycleGround"))
         { 
             OnRecycled?.Invoke(this.gameObject);

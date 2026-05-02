@@ -1,7 +1,6 @@
 using System;
 using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 
 public class UIManager : MonoBehaviour
 {
@@ -19,7 +18,7 @@ public class UIManager : MonoBehaviour
 
     public event Action GameStart;
     public void OnButtonClicked()
-    { 
+    {
         GameStart?.Invoke();
         _gameOverTitle.SetActive(false);
         _gameTitle.SetActive(false);
