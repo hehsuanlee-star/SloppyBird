@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using Unity.VisualScripting;
 using UnityEngine;
 
@@ -13,7 +14,7 @@ public class GameManager : MonoBehaviour
     private bool isGameStart;
     public int ObstaclePoolRange = 10;
     public int Score;
-
+    private CancellationTokenSource _spawnCts;
     public float initialInterval = 2;
     public float minIntervval = 0.1f;
     public float gameTimer;
@@ -63,12 +64,23 @@ public class GameManager : MonoBehaviour
     }
     private async void StartGame()
     {
-        isGameStart=true;
+        _spawnCts?.Cancel();
+        _spawnCts?.Dispose();
+        _spawnCts = new CancellationTokenSource();
+        var token = _spawnCts.Token;
+        isGameStart =true;
         controller.StartMotion();
         while (isGameStart)
         {
             ActivateObstacleOrSpawnNewOne();
-            await Awaitable.WaitForSecondsAsync(spawnInterval);
+            try
+            {
+                await Awaitable.WaitForSecondsAsync(spawnInterval, token);
+            }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
         }
     }
     private void ActivateObstacleOrSpawnNewOne()
