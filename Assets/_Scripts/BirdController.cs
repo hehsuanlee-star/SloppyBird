@@ -6,13 +6,17 @@ public class BirdController : MonoBehaviour
     public float jumpForce;
     private Rigidbody2D _rb;
     private Vector2 startPos;
-
+    private MyInputActions _input;
     private void Awake()
     {
         _rb = GetComponent<Rigidbody2D>();
         SetOrigin(transform.position);
+        _input = new MyInputActions();
+        _input.GamePlay.Jump.performed += _ => TryJump();
     }
 
+    private void OnEnable() => _input.Enable();
+    private void OnDisable() => _input.Disable();
     private void Start()
     {
     }
@@ -38,19 +42,20 @@ public class BirdController : MonoBehaviour
     { 
         transform.position = startPos;
     }
-    private void HandleJump()
+    //private void HandleJump()
+    //{
+    //    if (!isPaused && Input.GetMouseButtonDown(0))
+    //    {
+    //        _rb.linearVelocity = Vector2.zero;
+    //        _rb.AddForceY(jumpForce, ForceMode2D.Impulse);
+    //    }
+    //}
+
+    private void TryJump()
     {
-        if (!isPaused && Input.GetMouseButtonDown(0))
-        {
-            _rb.linearVelocity = Vector2.zero;
-            _rb.AddForceY(jumpForce, ForceMode2D.Impulse);
-        }
-    }
-    // Update is called once per frame
-    void Update()
-    {
-        HandleJump();
-        //Debug.Log($"{_rb.bodyType}");
+        if (isPaused) return;
+        _rb.linearVelocity = Vector2.zero;
+        _rb.AddForceY(jumpForce, ForceMode2D.Impulse);
     }
 
     public event Action OnTriggeredDead;
